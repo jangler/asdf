@@ -41,7 +41,7 @@
 --
 -- 01 02 07 03 07 07 81 80 FF -> 01 02 07 07 07 FF FF .. (380 more) .. FF FF
 
-SIGNATURE = 'PANDADEV'  -- begins a .panda file
+local SIGNATURE = 'PANDADEV'  -- begins a .panda file
 
 -- decode the next chunk, returning length, byte, and count of bytes read
 local function decoderun(f, compbyte)
