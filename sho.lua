@@ -83,11 +83,39 @@ local function write(shofile, path)
   local f, err = io.open(path, 'wb')
   if err then return err end
 
-  -- TODO
+  f:write(SIGNATURE)
+  f:write(('B'):pack(shofile.version))
+  f:write('\0\0')
+  f:write(('c32'):pack(shofile.title))
+  f:write(('c32'):pack(shofile.author))
+  f:write(('c32'):pack(shofile.shifile))
+
+  if shofile.version == 1 or shofile.version == 2 then
+    for _, v in ipairs(shofile.songdata) do
+      f:write(('b'):pack(v))
+    end
+    f:write(('B'):pack(shofile.tempo))
+    if shofile.version == 2 then
+      f:write(('B'):pack(shofile.length))
+      f:write(('B'):pack(shofile.loop))
+      f:write(('B'):pack(shofile.timesig))
+    end
+  else
+    assert(shofile.version == 3)
+    f:write(('H'):pack(shofile.length))
+    f:write(('B'):pack(shofile.loop))
+    f:write(('B'):pack(shofile.timesig))
+    f:write(('B'):pack(shofile.tempo))
+    for _, v in ipairs(shofile.songdata) do
+      f:write(('b'):pack(v))
+    end
+  end
 
   f:close()
   return nil
 end
 
 -- local shofile, err = read(arg[1])
+-- if err ~= nil then error(err) end
+-- err = write(shofile, arg[2])
 -- if err ~= nil then error(err) end
