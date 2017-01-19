@@ -147,7 +147,6 @@ end
 
 -- write a byte to the encoder. pass nill to flush
 local function encode(enc, byte)
-  enc.count = enc.count + 1
   if enc.length < 0x7FFF and (byte == enc.byte or enc.length == 0) then
     enc.length, enc.byte = enc.length + 1, byte
   else
@@ -162,7 +161,7 @@ local function write(pandafile, path)
   if err then return err end
 
   -- have to compress data first so that we know the file size
-  local enc = { chunks={}, compbyte=pandafile.compbyte, length=0, byte=nil, count=0 }
+  local enc = { chunks={}, compbyte=pandafile.compbyte, length=0, byte=nil }
   for _, order in ipairs(pandafile.orders) do
     encode(enc, order)
   end
