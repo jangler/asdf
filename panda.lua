@@ -21,22 +21,12 @@
 --
 -- pattern data:
 -- $?? ? []BYTE compressed pattern data (see "compression")
---              read by columns! for RLE, presumably
---              [?]pattern ($20000 uncompressed each) ->
---              [8]channel ($4000 uncompressed each) ->
---              [4]column ($1000 uncompressed each) ->
---              [64]row ->
---                +00 1 BYTE note (TODO)
---                +01 1 BYTE volume (TODO)
---                +02 2 n/a  unused (effects unimplemented)
+--              read by columns! for RLE, presumably (TODO)
 --
 -- compression:
 -- pandatracker uses a type of RLE to compress order and pattern data.
 -- if a byte is encountered equal to the compression byte from the header,
 -- the next byte TODO
-
--- as far as i can tell, the first break requires only 65 rows, but gets $8E80
--- the second one requires 191 rows and gets $80BE, which sort of makes sense.
 
 SIGNATURE = 'PANDADEV'  -- begins a .panda file
 
