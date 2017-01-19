@@ -49,7 +49,7 @@ local function decode(dec, n)
   while #dec.buf < n do
     local byte = dec.f:read(1)
     dec.filepos = dec.filepos + 1
-    if ('B'):unpack(byte) == dec.compbyte then
+    if byte == dec.compbyte then
       local len = 0
       for i = 0, 1 do
         local lenbyte = ('B'):unpack(dec.f:read(1))
@@ -87,10 +87,10 @@ local function read(path)
   local pandafile = {
     version=('xxxB'):unpack(f:read(4)),
     orders={},
-    patterns={},
+    channels={},
   }
   local filesize = ('I'):unpack(f:read(4)) + 0x10
-  pandafile.compbyte = ('B'):unpack(f:read(1))
+  pandafile.compbyte = f:read(1)
   pandafile.red, pandafile.green, pandafile.blue = ('BBB'):unpack(f:read(3))
   pandafile.speed = ('B'):unpack(f:read(1))
 
@@ -102,17 +102,20 @@ local function read(path)
   end
 
   -- pattern data
-  for i = 1, 64 do
-    pandafile.patterns[i] = {}
-  end
-  for ncol = 1, 32 do
-    for npat, pattern in ipairs(pandafile.patterns) do
+  for nchan = 1, 8 do
+    local channel = {}
+    for ncol = 1, 4 do
       local column = {}
-      for nrow = 1, 64 do
-        column[nrow] = ('B'):unpack(decode(dec, 1))
+      for npat = 1, 64 do
+        local pattern = {}
+        for nrow = 1, 64 do
+          pattern[nrow] = ('B'):unpack(decode(dec, 1))
+        end
+        column[npat] = pattern
       end
-      pattern[ncol] = column
+      channel[ncol] = column
     end
+    pandafile.channels[nchan] = channel
   end
   assert(dec.filepos == filesize)
 
