@@ -75,7 +75,7 @@ local function read(path)
   end
 
   f:close()
-  return nil, nil
+  return shofile, nil
 end
 
 -- returns error
