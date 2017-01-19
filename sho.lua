@@ -1,5 +1,10 @@
 -- shroomplayer sho file format
 --
+-- thanks to:
+-- - strobe and setrodox for creating version 1
+-- - rainwarrior for creating versions 2 and 3 for mariopants
+-- - b00daw for reverse engineering
+--
 -- common data:
 -- $000 4   STRING literal "shro"
 -- $004 1   BYTE   sho version
