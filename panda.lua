@@ -46,7 +46,7 @@ SIGNATURE = 'PANDADEV'  -- begins a .panda file
 -- return n bytes decoded from a decoder
 -- decoder must have elements 'f', 'filepos', 'buf', and 'compbyte'
 local function decode(dec, n)
-  while #dec.buf < n do
+  while #dec.buf < n + dec.off do
     local byte = dec.f:read(1)
     dec.filepos = dec.filepos + 1
     if byte == dec.compbyte then
@@ -64,14 +64,14 @@ local function decode(dec, n)
       fill = dec.f:read(1)
       dec.filepos = dec.filepos + 1
       for i = 1, len+1 do
-        dec.buf = dec.buf .. fill
+        table.insert(dec.buf, fill)
       end
     else
-      dec.buf = dec.buf .. byte
+      table.insert(dec.buf, byte)
     end
   end
-  local bytes = dec.buf:sub(1, n)
-  dec.buf = dec.buf:sub(n+1)
+  local bytes = table.concat(dec.buf, '', dec.off + 1, dec.off + n)
+  dec.off = dec.off + n
   return bytes
 end
 
@@ -95,7 +95,7 @@ local function read(path)
   pandafile.speed = ('B'):unpack(f:read(1))
 
   --- order list
-  local dec = { f=f, filepos=0x15, buf='', compbyte=pandafile.compbyte }
+  local dec = { f=f, filepos=0x15, buf={}, compbyte=pandafile.compbyte, off=0 }
   for i = 1, 64 do
     local order = ('B'):unpack(decode(dec, 1))
     pandafile.orders[i] = order
