@@ -43,30 +43,28 @@
 
 SIGNATURE = 'PANDADEV'  -- begins a .panda file
 
+-- decode the next chunk, returning length, byte, and count of bytes read
+local function decoderun(f, compbyte)
+  local length, byte, count = 1, f:read(1), 1
+  if byte == compbyte then
+    local lenbyte = ('B'):unpack(f:read(1))
+    length = lenbyte & 0x7F
+    if lenbyte & 0x80 ~= 0 then
+      length = (length << 8) + ('B'):unpack(f:read(1))
+      count = count + 1
+    end
+    length, byte, count = length + 1, f:read(1), count + 2
+  end
+  assert(byte ~= nil)
+  return length, byte, count
+end
+
 -- return n bytes decoded from a decoder
--- decoder must have elements 'f', 'filepos', 'buf', and 'compbyte'
 local function decode(dec, n)
   while #dec.buf < n + dec.off do
-    local byte = dec.f:read(1)
-    dec.filepos = dec.filepos + 1
-    if byte == dec.compbyte then
-      local len = 0
-      for i = 0, 1 do
-        local lenbyte = ('B'):unpack(dec.f:read(1))
-        dec.filepos = dec.filepos + 1
-        if i == 1 then
-          len = (len << 8) + lenbyte
-        else
-          len = lenbyte & 0x7F
-        end
-        if lenbyte & 0x80 == 0 then break end
-      end
-      fill = dec.f:read(1)
-      dec.filepos = dec.filepos + 1
-      for i = 1, len+1 do
-        table.insert(dec.buf, fill)
-      end
-    else
+    local length, byte, count = decoderun(dec.f, dec.compbyte)
+    dec.filepos = dec.filepos + count
+    for i = 1, length do
       table.insert(dec.buf, byte)
     end
   end
