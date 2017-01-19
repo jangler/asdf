@@ -15,7 +15,7 @@
 -- $13 uint8     blue GUI color multiplier
 -- $14 uint8     speed ($01-$0F, lower is faster)
 --
--- everything beyond this point is compressed (see "compression")
+-- everything beyond this point is compressed (see below).
 -- when uncompressed, it looks like this:
 --
 -- order list:
@@ -31,14 +31,13 @@
 --               effect (unused) or
 --               param (unused)
 --
--- compression:
--- this is a form of RLE. if a byte A read from the file is equal to the
--- compression byte defined in the header, the next byte B denotes the length
--- of the run, unless the high bit of B is set, in which case the length equals
--- the low 15 bits of BC (little-endian), where C is the next byte. the decoded
--- chunk is equal to the next byte, length+1 times in a row. if byte A is not
--- equal to the compression byte, it is read as usual. example if compression
--- byte is 7:
+-- a form of RLE is used for order list and pattern data compression. if a byte
+-- A read from the file is equal to the compression byte defined in the header,
+-- the next byte B denotes the length of the run, unless the high bit of B is
+-- set, in which case the length equals the low 15 bits of BC (little-endian),
+-- where C is the next byte. the decoded chunk is equal to the next byte,
+-- length+1 times in a row. if byte A is not equal to the compression byte, it
+-- is read as usual. example if compression byte is 7:
 --
 -- 01 02 07 03 07 07 81 80 FF -> 01 02 07 07 07 FF FF .. (380 more) .. FF FF
 
