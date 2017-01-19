@@ -123,6 +123,73 @@ local function read(path)
   return pandafile, nil
 end
 
--- test code
+-- return the (possibly) compressed byte string encoding of the given run
+local function encoderun(compbyte, length, byte)
+  local chunk = ''
+
+  if length < 4 and byte ~= ('B'):unpack(compbyte) then
+    -- write uncompressed
+    for i = 1, length do
+      chunk = chunk .. ('B'):pack(byte)
+    end
+  elseif length < 0x80 then
+    -- compress into 3 bytes
+    chunk = compbyte .. ('BB'):pack(length - 1, byte)
+  else
+    -- compress into 4 bytes
+    assert(length < 0x8000)
+    length = length - 1
+    chunk = compbyte .. ('BBB'):pack(0x80 | (length >> 8), length & 0xFF, byte)
+  end
+
+  return chunk
+end
+
+-- write a byte to the encoder. pass nill to flush
+local function encode(enc, byte)
+  enc.count = enc.count + 1
+  if enc.length < 0x7FFF and (byte == enc.byte or enc.length == 0) then
+    enc.length, enc.byte = enc.length + 1, byte
+  else
+    table.insert(enc.chunks, encoderun(enc.compbyte, enc.length, enc.byte))
+    enc.length, enc.byte = 1, byte
+  end
+end
+
+-- returns error
+local function write(pandafile, path)
+  local f, err = io.open(path, 'wb')
+  if err then return err end
+
+  -- have to compress data first so that we know the file size
+  local enc = { chunks={}, compbyte=pandafile.compbyte, length=0, byte=nil, count=0 }
+  for _, order in ipairs(pandafile.orders) do
+    encode(enc, order)
+  end
+  for _, channel in ipairs(pandafile.channels) do
+    for _, column in ipairs(channel) do
+      for _, pattern in ipairs(column) do
+        for _, row in ipairs(pattern) do
+          encode(enc, row)
+        end
+      end
+    end
+  end
+  encode(enc, nil)  -- flush buffered data
+  local compdata = table.concat(enc.chunks)
+
+  -- then write everything
+  f:write(SIGNATURE)
+  f:write(('xxxBIc1BBBB'):pack(pandafile.version, #compdata + 0x05,
+    pandafile.compbyte, pandafile.red, pandafile.green, pandafile.blue,
+    pandafile.speed))
+  f:write(compdata)
+
+  f:close()
+  return nil
+end
+
 -- local pandafile, err = read(arg[1])
+-- if err ~= nil then error(err) end
+-- err = write(pandafile, arg[2])
 -- if err ~= nil then error(err) end
