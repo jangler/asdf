@@ -37,11 +37,30 @@
 local SIGNATURE = 'shro'  -- begins a .sho file
 local SHIFILE_DEFAULT = 'default.shi'
 
--- returns shofile, error
-local function read(path)
-  local f, err = io.open(path, 'rb')
-  if err then return nil, err end
+local File = {}
+local File_mt = { __index = File }
 
+-- returns a new blank shofile
+local function new()
+  local shofile = {
+    version=2,  -- TODO see the next todo
+    title='',
+    author='',
+    shifile=SHIFILE_DEFAULT,
+    songdata={},
+    tempo=80,
+    length=96,
+    loop=0,
+    timesig=1,
+  }
+  for i = 1, 576, 2 do
+    shofile.songdata[i], shofile.songdata[i+1] = 0xFF, 0xDF
+  end
+  return setmetatable(shofile, File_mt)
+end
+
+-- read a shofile from f
+local function read(f)
   -- check signature and version validity
   if f:read(4) ~= SIGNATURE then return nil, 'not a sho file' end
   local version = ('B'):unpack(f:read(1))
@@ -50,7 +69,7 @@ local function read(path)
 
   -- common stuff
   local shofile = {
-    version=version,
+    version=version,  -- TODO don't store this once writing dynamically
     title=f:read(32):gsub('\0', ''),
     author=f:read(32):gsub('\0', ''),
     shifile=f:read(32):gsub('\0', ''),
@@ -75,53 +94,49 @@ local function read(path)
     shofile.timesig = ('B'):unpack(f:read(1))
     shofile.tempo = ('B'):unpack(f:read(1))
     for i = 1, shofile.length * 6 do
-      shofile.songdata[i] = ('b'):unpack(f:read(1))
+      shofile.songdata[i] = ('B'):unpack(f:read(1))
     end
   end
 
-  f:close()
-  return shofile, nil
+  return setmetatable(shofile, File_mt)
 end
 
--- returns error
-local function write(shofile, path)
-  local f, err = io.open(path, 'wb')
-  if err then return err end
-
+-- write shofile to f
+function File:write(f)
+  -- common data
   f:write(SIGNATURE)
-  f:write(('B'):pack(shofile.version))
+  f:write(('B'):pack(self.version))
   f:write('\0\0')
-  f:write(('c32'):pack(shofile.title))
-  f:write(('c32'):pack(shofile.author))
-  f:write(('c32'):pack(shofile.shifile))
+  f:write(('c32'):pack(self.title))
+  f:write(('c32'):pack(self.author))
+  f:write(('c32'):pack(self.shifile))
 
-  if shofile.version == 1 or shofile.version == 2 then
-    for _, v in ipairs(shofile.songdata) do
-      f:write(('b'):pack(v))
+  -- version-specific data
+  -- TODO figure this out dynamically based on song length
+  if self.version == 1 or self.version == 2 then
+    for _, v in ipairs(self.songdata) do
+      f:write(('B'):pack(v))
     end
-    f:write(('B'):pack(shofile.tempo))
-    if shofile.version == 2 then
-      f:write(('B'):pack(shofile.length))
-      f:write(('B'):pack(shofile.loop))
-      f:write(('B'):pack(shofile.timesig))
+    f:write(('B'):pack(self.tempo))
+    if self.version == 2 then
+      f:write(('B'):pack(self.length))
+      f:write(('B'):pack(self.loop))
+      f:write(('B'):pack(self.timesig))
     end
   else
-    assert(shofile.version == 3)
-    f:write(('H'):pack(shofile.length))
-    f:write(('B'):pack(shofile.loop))
-    f:write(('B'):pack(shofile.timesig))
-    f:write(('B'):pack(shofile.tempo))
-    for _, v in ipairs(shofile.songdata) do
-      f:write(('b'):pack(v))
+    assert(self.version == 3)
+    f:write(('H'):pack(self.length))
+    f:write(('B'):pack(self.loop))
+    f:write(('B'):pack(self.timesig))
+    f:write(('B'):pack(self.tempo))
+    for _, v in ipairs(self.songdata) do
+      f:write(('B'):pack(v))
     end
   end
-
-  f:close()
-  return nil
 end
 
 -- return module
 return {
+  new = new,
   read = read,
-  write = write,
 }
