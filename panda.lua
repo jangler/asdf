@@ -57,9 +57,9 @@ local function new()
     orders={},
     channels={},
   }
-  orders[1] = 0x00
+  pandafile.orders[1] = 0x00
   for i = 2, 64 do
-    orders[i] = 0xFF
+    pandafile.orders[i] = 0xFF
   end
   for i = 1, 8 do
     channel = {}
@@ -74,7 +74,7 @@ local function new()
       end
       channel[j] = column
     end
-    channels[i] = channel
+    pandafile.channels[i] = channel
   end
   return setmetatable(pandafile, File_mt)
 end
