@@ -120,7 +120,8 @@ local function write(shofile, path)
   return nil
 end
 
--- local shofile, err = read(arg[1])
--- if err ~= nil then error(err) end
--- err = write(shofile, arg[2])
--- if err ~= nil then error(err) end
+-- return module
+return {
+  read = read,
+  write = write,
+}

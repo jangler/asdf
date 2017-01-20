@@ -186,7 +186,8 @@ local function write(pandafile, path)
   return nil
 end
 
--- local pandafile, err = read(arg[1])
--- if err ~= nil then error(err) end
--- err = write(pandafile, arg[2])
--- if err ~= nil then error(err) end
+-- return module
+return {
+  read = read,
+  write = write,
+}
