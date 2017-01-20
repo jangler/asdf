@@ -79,7 +79,7 @@ local function read(f)
   -- version-specific stuff
   if version == 1 or version == 2 then
     for i = 1, 576 do
-      shofile.songdata[i] = ('b'):unpack(f:read(1))
+      shofile.songdata[i] = ('B'):unpack(f:read(1))
     end
     shofile.tempo = ('B'):unpack(f:read(1))
     if version == 2 then
