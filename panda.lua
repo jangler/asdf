@@ -190,11 +190,11 @@ end
 -- write the pandafile to f
 function File:write(f)
   -- have to compress data first so that we know the file size
-  local enc = { chunks={}, compbyte=pandafile.compbyte, length=0, byte=nil }
-  for _, order in ipairs(pandafile.orders) do
+  local enc = { chunks={}, compbyte=self.compbyte, length=0, byte=nil }
+  for _, order in ipairs(self.orders) do
     encode(enc, order)
   end
-  for _, channel in ipairs(pandafile.channels) do
+  for _, channel in ipairs(self.channels) do
     for _, column in ipairs(channel) do
       for _, pattern in ipairs(column) do
         for _, row in ipairs(pattern) do
@@ -208,9 +208,8 @@ function File:write(f)
 
   -- then write everything
   f:write(SIGNATURE)
-  f:write(('xxxBIc1BBBB'):pack(pandafile.version, #compdata + 0x05,
-    pandafile.compbyte, pandafile.red, pandafile.green, pandafile.blue,
-    pandafile.speed))
+  f:write(('xxxBIc1BBBB'):pack(self.version, #compdata + 0x05, self.compbyte,
+    self.red, self.green, self.blue, self.speed))
   f:write(compdata)
 end
 
