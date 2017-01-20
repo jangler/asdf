@@ -58,7 +58,7 @@ local function new()
   return setmetatable(shofile, File_mt)
 end
 
--- read a shofile from f
+-- returns shofile, nil
 local function read(f)
   -- check signature and version validity
   if f:read(4) ~= SIGNATURE then return nil, 'not a sho file' end
@@ -96,7 +96,7 @@ local function read(f)
     end
   end
 
-  return setmetatable(shofile, File_mt)
+  return setmetatable(shofile, File_mt), nil
 end
 
 -- write shofile to f
