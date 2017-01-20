@@ -6,33 +6,33 @@
 -- - b00daw for reverse engineering
 --
 -- common data:
--- $000 4   STRING literal "shro"
--- $004 1   BYTE   sho version
--- $005 2   n/a    reserved
--- $007 32  STRING title
--- $027 32  STRING author
--- $047 32  STRING shi filename (sample pack), default "default.shi"
+-- $000 4   (char) literal "shro"
+-- $004 1   (byte) sho version
+-- $005 2          reserved
+-- $007 32  (char) title
+-- $027 32  (char) author
+-- $047 32  (char) shi filename (sample pack), default "default.shi"
 --
 -- if version is $01 (shroomplayer) or $02 (mariopants):
--- $067 576 []BYTE song data (see "song data format")
--- $2A7 1   UINT   tempo ($00-$9F)
+-- $067 576 (byte) song data (see "song data format")
+-- $2A7 1   (byte) tempo ($00-$9F)
 --
 -- if version is $02 (mariopants):
--- $2A8 1   UINT   song length in beats ($01-$60)
--- $2A9 1   BOOL   song loop flag
--- $2AA 1   BOOL   time signature ($00 = 3/4, $01 = 4/4)
+-- $2A8 1   (byte) song length in beats ($01-$60)
+-- $2A9 1   (byte) song loop flag
+-- $2AA 1   (byte) time signature ($00 = 3/4, $01 = 4/4)
 --
 -- if version is $03 (mariopants extended):
--- $067 2   UINT   song length in beats ($0061-$0B40)
--- $069 1   BOOL   song loop flag
--- $06A 1   BOOL   time signature ($00 = 3/4, nz $01 = 4/4)
--- $06B 1   UINT   tempo ($00-$9F)
--- $05C ?   []BYTE song data (see "song data structure")
+-- $067 2   (word) song length in beats ($0061-$0B40)
+-- $069 1   (byte) song loop flag
+-- $06A 1   (byte) time signature ($00 = 3/4, nz $01 = 4/4)
+-- $06B 1   (byte) tempo ($00-$9F)
+-- $05C ?   (byte) song data (see "song data structure")
 --      ^ length = song length * 6
 --
 -- song data structure; beat/channel array in beat-major order w/ 3 channels:
--- +0   1   BYTE   pitch ($01-$0D = pitch, $FF = off)
--- +1   1   BYTE   instrument ($00-$0E = instrument, $DF = off)
+-- +0   1   (byte) pitch ($01-$0D = pitch, $FF = off)
+-- +1   1   (byte) instrument ($00-$0E = instrument, $DF = off)
 
 local SIGNATURE = 'shro'  -- begins a .sho file
 local SHIFILE_DEFAULT = 'default.shi'

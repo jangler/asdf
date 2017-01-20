@@ -5,31 +5,31 @@
 -- - slimeball for reverse engineering for it2panda
 --
 -- header:
--- $00 [9]byte   literal 'PANDADEV'
--- $08 [3]byte   unused?
--- $0B byte      unknown, $02 in all the modules i could find
--- $0C uint32    file size left to read
--- $10 byte      compression byte (see "compression")
--- $11 uint8     red GUI color multiplier
--- $12 uint8     green GUI color multiplier
--- $13 uint8     blue GUI color multiplier
--- $14 uint8     speed ($01-$0F, lower is faster)
+-- $00 9  (char)  literal 'PANDADEV'
+-- $08 3          unused?
+-- $0B 1  (byte)  unknown, $02 in all the modules i could find
+-- $0C 4  (dword) file size left to read
+-- $10 1  (byte)  compression byte (see "compression")
+-- $11 1  (byte)  red GUI color multiplier
+-- $12 1  (byte)  green GUI color multiplier
+-- $13 1  (byte)  blue GUI color multiplier
+-- $14 1  (byte)  speed ($01-$0F, lower is faster)
 --
 -- everything beyond this point is compressed (see below).
 -- when uncompressed, it looks like this:
 --
 -- order list:
--- $15 [64]uint8 order list ($00-$3F, $FF = none)
+-- $15 64 (byte)  order list ($00-$3F, $FF = none)
 --
 -- pattern data:
--- $55 [8]array  channel (1->8)
---  of [4]array  column (note->volume->effect->param)
---  of [64]array pattern (0->63)
---  of [64]byte  row:
---               note ($03-$C2, $00 = none) or
---               volume ($10-$50, $00 = none) or
---               effect (unused) or
---               param (unused)
+-- $55 8  (array) channels (1->8)
+--  of 4  (array) columns (note->volume->effect->param)
+--  of 64 (array) patterns (0->63)
+--  of 64 (byte)  rows:
+--                note ($03-$C2, $00 = none) or
+--                volume ($10-$50, $00 = none) or
+--                effect (unused) or
+--                param (unused)
 --
 -- a form of RLE is used for order list and pattern data compression. if a byte
 -- A read from the file is equal to the compression byte defined in the header,
