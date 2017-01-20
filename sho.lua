@@ -43,7 +43,6 @@ local File_mt = { __index = File }
 -- returns a new blank shofile
 local function new()
   local shofile = {
-    version=2,  -- TODO see the next todo
     title='',
     author='',
     shifile=SHIFILE_DEFAULT,
@@ -69,7 +68,6 @@ local function read(f)
 
   -- common stuff
   local shofile = {
-    version=version,  -- TODO don't store this once writing dynamically
     title=f:read(32):gsub('\0', ''),
     author=f:read(32):gsub('\0', ''),
     shifile=f:read(32):gsub('\0', ''),
@@ -103,28 +101,30 @@ end
 
 -- write shofile to f
 function File:write(f)
+  -- use extended version iff song length requires it
+  local version = self.length > 96 and 3 or 2
+
   -- common data
   f:write(SIGNATURE)
-  f:write(('B'):pack(self.version))
+  f:write(('B'):pack(version))
   f:write('\0\0')
   f:write(('c32'):pack(self.title))
   f:write(('c32'):pack(self.author))
   f:write(('c32'):pack(self.shifile))
 
   -- version-specific data
-  -- TODO figure this out dynamically based on song length
-  if self.version == 1 or self.version == 2 then
+  if version == 1 or version == 2 then
     for _, v in ipairs(self.songdata) do
       f:write(('B'):pack(v))
     end
     f:write(('B'):pack(self.tempo))
-    if self.version == 2 then
+    if version == 2 then
       f:write(('B'):pack(self.length))
       f:write(('B'):pack(self.loop))
       f:write(('B'):pack(self.timesig))
     end
   else
-    assert(self.version == 3)
+    assert(version == 3)
     f:write(('H'):pack(self.length))
     f:write(('B'):pack(self.loop))
     f:write(('B'):pack(self.timesig))
