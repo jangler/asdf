@@ -121,12 +121,12 @@ local function read(f)
     channels={},
   }
   local filesize = ('I'):unpack(f:read(4)) + 0x10
-  pandafile.compbyte = f:read(1)
+  local compbyte = f:read(1)
   pandafile.red, pandafile.green, pandafile.blue = ('BBB'):unpack(f:read(3))
   pandafile.speed = ('B'):unpack(f:read(1))
 
   --- order list
-  local dec = { f=f, filepos=0x15, buf={}, compbyte=pandafile.compbyte, off=0 }
+  local dec = { f=f, filepos=0x15, buf={}, compbyte=compbyte, off=0 }
   for i = 1, 64 do
     local order = ('B'):unpack(decode(dec, 1))
     pandafile.orders[i] = order
@@ -151,6 +151,31 @@ local function read(f)
   assert(dec.filepos == filesize)
 
   return setmetatable(pandafile, File_mt), nil
+end
+
+-- return the least-used byte in the file's compressible data
+local function pickcompbyte(pandafile)
+  -- count the occurrences of each byte
+  local counts = {}
+  for i = 0x00, 0xFF do
+    counts[i + 1] = {i, 0}
+  end
+  for _, order in ipairs(pandafile.orders) do
+    counts[order + 1][2] = counts[order + 1][2] + 1
+  end
+  for _, channel in ipairs(pandafile.channels) do
+    for _, column in ipairs(channel) do
+      for _, pattern in ipairs(column) do
+        for _, row in ipairs(pattern) do
+          counts[row + 1][2] = counts[row + 1][2] + 1
+        end
+      end
+    end
+  end
+
+  -- return the least-used byte based on the counts
+  table.sort(counts, function(a, b) return a[2] < b[2] end)
+  return ('B'):pack(counts[1][1])
 end
 
 -- return the (possibly) compressed byte string encoding of the given run
@@ -185,12 +210,10 @@ local function encode(enc, byte)
   end
 end
 
--- TODO: determine the optimal escape byte for RLE, per file
-
 -- write the pandafile to f
 function File:write(f)
   -- have to compress data first so that we know the file size
-  local enc = { chunks={}, compbyte=self.compbyte, length=0, byte=nil }
+  local enc = { chunks={}, compbyte=pickcompbyte(self), length=0, byte=nil }
   for _, order in ipairs(self.orders) do
     encode(enc, order)
   end
@@ -208,7 +231,7 @@ function File:write(f)
 
   -- then write everything
   f:write(SIGNATURE)
-  f:write(('xxxBIc1BBBB'):pack(self.version, #compdata + 0x05, self.compbyte,
+  f:write(('xxxBIc1BBBB'):pack(self.version, #compdata + 0x05, enc.compbyte,
     self.red, self.green, self.blue, self.speed))
   f:write(compdata)
 end
