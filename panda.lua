@@ -43,6 +43,42 @@
 
 local SIGNATURE = 'PANDADEV'  -- begins a .panda file
 
+local File = {}
+local File_mt = { __index = File }
+
+-- returns a new blank pandafile
+local function new()
+  local pandafile = {
+    version=0x02,
+    red=0x3C,
+    green=0x46,
+    blue=0x50,
+    speed=3,
+    orders={},
+    channels={},
+  }
+  orders[1] = 0x00
+  for i = 2, 64 do
+    orders[i] = 0xFF
+  end
+  for i = 1, 8 do
+    channel = {}
+    for j = 1, 4 do
+      column = {}
+      for k = 1, 64 do
+        pattern = {}
+        for l = 1, 64 do
+          pattern[l] = 0x00
+        end
+        column[k] = pattern
+      end
+      channel[j] = column
+    end
+    channels[i] = channel
+  end
+  return setmetatable(pandafile, File_mt)
+end
+
 -- decode the next chunk, returning length, byte, and count of bytes read
 local function decoderun(f, compbyte)
   local length, byte, count = 1, f:read(1), 1
@@ -74,10 +110,7 @@ local function decode(dec, n)
 end
 
 -- returns pandafile, error
-local function read(path)
-  local f, err = io.open(path, 'rb')
-  if err then return nil, err end
-
+local function read(f)
   -- check signature validity
   if f:read(8) ~= SIGNATURE then return nil, 'not a panda file' end
 
@@ -117,8 +150,7 @@ local function read(path)
   end
   assert(dec.filepos == filesize)
 
-  f:close()
-  return pandafile, nil
+  return setmetatable(pandafile, File_mt), nil
 end
 
 -- return the (possibly) compressed byte string encoding of the given run
@@ -143,7 +175,7 @@ local function encoderun(compbyte, length, byte)
   return chunk
 end
 
--- write a byte to the encoder. pass nill to flush
+-- write a byte to the encoder. pass nil to flush
 local function encode(enc, byte)
   if enc.length < 0x7FFF and (byte == enc.byte or enc.length == 0) then
     enc.length, enc.byte = enc.length + 1, byte
@@ -153,11 +185,10 @@ local function encode(enc, byte)
   end
 end
 
--- returns error
-local function write(pandafile, path)
-  local f, err = io.open(path, 'wb')
-  if err then return err end
+-- TODO: determine the optimal escape byte for RLE, per file
 
+-- write the pandafile to f
+function File:write(f)
   -- have to compress data first so that we know the file size
   local enc = { chunks={}, compbyte=pandafile.compbyte, length=0, byte=nil }
   for _, order in ipairs(pandafile.orders) do
@@ -181,13 +212,10 @@ local function write(pandafile, path)
     pandafile.compbyte, pandafile.red, pandafile.green, pandafile.blue,
     pandafile.speed))
   f:write(compdata)
-
-  f:close()
-  return nil
 end
 
 -- return module
 return {
+  new = new,
   read = read,
-  write = write,
 }
