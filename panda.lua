@@ -9,7 +9,7 @@
 -- $08 3          unused?
 -- $0B 1  (byte)  unknown, $02 in all the modules i could find
 -- $0C 4  (dword) file size left to read
--- $10 1  (byte)  compression byte (see "compression")
+-- $10 1  (byte)  compression byte (see below)
 -- $11 1  (byte)  red GUI color multiplier
 -- $12 1  (byte)  green GUI color multiplier
 -- $13 1  (byte)  blue GUI color multiplier
