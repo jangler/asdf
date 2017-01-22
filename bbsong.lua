@@ -34,8 +34,22 @@ local function readinfo(song, f)
   end
 end
 
+-- read layout chunk (order list)
+local function readlayout(song, f)
+  -- all the seeks in here are to skip the useless ascii keys/terminators
+  f:seek('cur', 10)
+  song.loopstart = tonumber(readstr(f))
+  f:seek('cur', 7)
+  song.layout = {}
+  for i = 1, tonumber(readstr(f)) do  -- iterate through length of song
+    song.layout[#song.layout-1] = ('B'):unpack(f:read(1))
+  end
+  f:seek('cur', 5)
+end
+
 local CHUNK_MAP = {}
 CHUNK_MAP[':INFO'] = readinfo
+CHUNK_MAP[':LAYOUT'] = readlayout
 -- the following chunks are not implemented for reading
 -- ':LAYOUT' = readlayout,
 -- ':PATTERNDATA' = readpatterndata,

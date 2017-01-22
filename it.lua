@@ -51,6 +51,47 @@ local function new()
   return setmetatable(mod, File_mt)
 end
 
+-- create and return a blank 64-row pattern
+local function newpattern()
+  local rows = {}
+  for i = 1, 64 do
+    rows[i] = {}
+  end
+  return rows
+end
+
+-- read a pattern from a file
+local function readpattern(f)
+  -- TODO do this correctly
+  local length, numrows = ('HHxxxx'):unpack(f:read(8))
+  local rows = {}
+  local maskvars = {}
+  for i = 1, numrows do
+    local chanvar, channels = ('B'):unpack(f:read(1)), {}
+    local maskvar = maskvars[chanvar]
+    while chanvar ~= 0 do
+      local cell = {}
+      if chanvar & 128 ~= 0 then
+        maskvar = ('B'):unpack(f:read(1))
+      else
+        maskvar = maskvars[chanvar]
+      end
+      maskvar = maskvar == nil and 0 or maskvar
+      if maskvar & 1 ~= 0 then cell.note = ('B'):unpack(f:read(1)) end
+      if maskvar & 2 ~= 0 then cell.inst = ('B'):unpack(f:read(1)) end
+      if maskvar & 4 ~= 0 then cell.volpan = ('B'):unpack(f:read(1)) end
+      if maskvar & 8 ~= 0 then
+        cell.cmd, cell.cmdval = ('BB'):unpack(f:read(2))
+      end
+      channels[chanvar & 0x7F] = cell
+      chanvar = ('B'):unpack(f:read(1))
+      maskvars[chanvar] = maskvar
+    end
+    rows[i] = channels
+  end
+  return rows
+end
+
 -- returns itfile, error
 local function read(f)
   if f:read(4) ~= SIGNATURE then return nil, 'not an IT module' end
@@ -82,7 +123,16 @@ local function read(f)
     mod.message = ''
   end
 
-  -- TODO read patterns (skip instruments and samples)
+  -- read patterns (skip instruments and samples)
+  for i, offset in ipairs(patoffsets) do
+    if offset == 0 then
+      -- empty pattern
+      mod.patterns[i] = newpattern()
+    else
+      f:seek("set", offset)
+      mod.patterns[i] = readpattern(f)
+    end
+  end
 
   return setmetatable(mod, File_mt), nil
 end
@@ -94,7 +144,8 @@ function File:write(f)
   for i, pattern in ipairs(self.patterns) do
     -- TODO
   end
-  local messageoffset = 0  -- TODO
+  local messageoffset = (0xC0 + #self.orders + #self.instruments*4 +
+    #self.patterns*4)
 
   -- write header
   f.write(SIGNATURE)
@@ -125,8 +176,24 @@ function File:write(f)
     f.write(('>I'):pack(offset))
   end
 
-  -- TODO write message (remember to gsub('\n', '\r'))
+  f:write(self.message:gsub('\n', '\r'))
   -- TODO write patterns
+end
+
+-- print a textual representation of pattern i (1-indexed) to file f
+function File:printpattern(i, f)
+  -- TODO intelligently only print as many channels as necessary
+  for i, row in ipairs(self.patterns[i]) do
+    local channels = {}
+    for j = 1, 4 do
+      if row[i] == nil then
+        channels[j] = '...----.00'
+      else
+        channels[j] = 'YESyeahYES'
+      end
+    end
+    f:write(('%03d '):format(i - 1) .. table.concat(channels, ' ') .. '\n')
+  end
 end
 
 return {

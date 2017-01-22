@@ -38,8 +38,9 @@ local Module_mt = { __index = Module }
 -- RLE-compresses a table of integers into a new table
 local function rlencode(buf, escbyte)
   local out, runlen, runbyte = {}, 1, nil
-  for _, byte in ipairs(buf) do
-    if byte == runbyte and runlen < 0x100 then
+  for i = 1, #buf + 1 do  -- get extra nil value to trigger flush
+    local byte = buf[i]
+    if byte == runbyte then
       runlen = runlen + 1
     elseif runlen > 3 or runbyte == escbyte then
       out[#out+1] = escbyte
