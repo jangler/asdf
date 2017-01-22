@@ -135,6 +135,45 @@ function File:write(f)
   end
 end
 
+-- the following functions implement the ASDF interface:
+
+function File:gettitle() return self.title end
+function File:getspeed() return 1 end
+function File:gettempo() return self.tempo end  -- TODO convert this
+function File:getorders()
+  local orders = {}
+  for i = 1, #self.songdata / 576 do
+    orders[i] = i
+  end
+  return orders
+end
+function File:getpatterns()
+  local patterns = {}
+  for i = 1, #self.songdata / 576 do
+    local rows = {}
+    for j = 1, math.min(96, #self.songdata / 6 - 96 * (i-1)) do
+      local cells = {}
+      for k = 1, 3 do
+        local cell = {}
+        -- TODO map the notes & instruments better
+        cells[k] = {
+          self.songdata[(i-1) * 576 + (j-1) * 6 + (k-1) * 2 + 1],
+          self.songdata[(i-1) * 576 + (j-1) * 6 + (k-1) * 2 + 2] + 1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+        }
+      end
+      rows[j] = cells
+    end
+    patterns[i] = rows
+  end
+  return patterns
+end
+
 -- return module
 return {
   new = new,
